@@ -129,6 +129,11 @@ motherfuckingenterevent(xcb_generic_event_t *e)
 	  *		e->detail == 4:
 	  *			content self -> other
 	**/
+	printf("response_type: %s detail: %i wid: 0x%08x\n",
+		ee->response_type == 7 ? "ENTER (7)" : "LEAVE (8)",
+		ee->detail,
+		ee->event);
+	fflush(stdout);
 	if ((ee->detail != 2) &&
 			(ee->mode == XCB_NOTIFY_MODE_NORMAL ||
 			 ee->mode == XCB_NOTIFY_MODE_UNGRAB))
@@ -257,8 +262,10 @@ handle_events(void)
 		}
 
 		if (wid > 0) {
+			/* disable output for debugging
 			printf("%d:0x%08x\n", e->response_type, wid);
 			fflush(stdout);
+			*/
 		}
 	}
 }
