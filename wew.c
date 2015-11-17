@@ -99,7 +99,42 @@ motherfuckingenterevent(xcb_generic_event_t *e)
 	xcb_enter_notify_event_t *ee;
 
 	ee = (xcb_enter_notify_event_t*)e;
-	if (ee->detail == 0 && 
+	/**
+	  * xcb_enter_notify_event_t->detail and
+	  * xcb_leave_notify_event_t->detail Documentation:
+	  *	Legend:
+	  *		self .... wid in ee->event
+	  *		other ... other wid
+	  *		root .... root window
+	  *	ee->response_type == 7 (enter):
+	  *		e->detail == 0:
+	  *			root -> border self
+	  *		e->detail == 1:
+	  *			root -> content self
+	  *		e->detail == 2:
+	  *			content self -> border self
+	  *		e->detail == 3:
+	  *			other -> border self
+	  *		e->detail == 4:
+	  *			other -> content self
+	  *	ee->response_type == 8 (leave):
+	  *		e->detail == 0:
+	  *			border self -> root
+	  *		e->detail == 1:
+	  *			content self -> root
+	  *		e->detail == 2:
+	  *			border self -> content self
+	  *		e->detail == 3:
+	  *			border self -> other
+	  *		e->detail == 4:
+	  *			content self -> other
+	**/
+	printf("response_type: %s detail: %i wid: 0x%08x\n",
+		ee->response_type == 7 ? "ENTER (7)" : "LEAVE (8)",
+		ee->detail,
+		ee->event);
+	fflush(stdout);
+	if ((ee->detail != 2) &&
 			(ee->mode == XCB_NOTIFY_MODE_NORMAL ||
 			 ee->mode == XCB_NOTIFY_MODE_UNGRAB))
 		return 1;
@@ -140,10 +175,23 @@ get_window_id(xcb_generic_event_t *e)
 			wid = ((xcb_button_press_event_t*)e)->child;
 			break;
 
+		/*
+		 * MOTION_NOTIFY. Be careful with this one...
+		 *         It triggers ALOT! 
+		 *
+		 *          |\.---./|_
+	 	 *         (o)   (°) ''--._
+	 	 *         / .A--.         '\
+	 	 *         |'     `.         \
+	 	 *         /                 \
+		 *        /_;`|__\------(__/-\
+		 */
+		case XCB_MOTION_NOTIFY:
+			wid = ((xcb_motion_notify_event_t*)e)->event;
+			break;
 		/* please... handle me ... ;_;
 		case XCB_KEY_PRESS:
 		case XCB_KEY_RELEASE:
-		case XCB_MOTION_NOTIFY:
 		case XCB_KEYMAP_NOTIFY:
 		case XCB_EXPOSE:
 		case XCB_GRAPHICS_EXPOSURE:
@@ -214,8 +262,10 @@ handle_events(void)
 		}
 
 		if (wid > 0) {
+			/* disable output for debugging
 			printf("%d:0x%08x\n", e->response_type, wid);
 			fflush(stdout);
+			*/
 		}
 	}
 }
